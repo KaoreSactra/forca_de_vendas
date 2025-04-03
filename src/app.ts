@@ -1,14 +1,42 @@
-import bodyParser from "body-parser"
-import express from "express"
-import ProductRoutes from "./routes/ProductRoutes"
+import express, { Application } from "express"
+import cors from "cors"
+import router from "./routes"
 
-const app = express()
-app.use(bodyParser.json())
+class Server {
+  private app: Application
+  private port: number
 
-app.use("/products", ProductRoutes)
+  constructor(port: number) {
+    this.app = express()
+    this.port = port
+    this.middlewares()
+    this.routes()
+  }
 
-app.listen(3000, () => {
-  console.log("Servidor rodando na porta: 3000")
-})
+  private middlewares(): void {
+    this.app.use(
+      cors({
+        origin: `http://localhost:${this.port}`,
+        methods: ["GET", "POST", "PUT", "DELETE"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
+      })
+    )
+    this.app.use(express.json())
+  }
 
-export default app
+  private routes(): void {
+    this.app.use("/api", router)
+  }
+
+  public start(): void {
+    this.app.listen(this.port, () => {
+      console.log(`API rodando...\nhttp://localhost:${this.port}/api`)
+    })
+  }
+}
+
+const server = new Server(3000)
+server.start()
+
+export default server

@@ -1,26 +1,29 @@
 import { Request, Response } from "express"
+import { IProduct } from "../interfaces/Product"
 import ProductService from "../services/ProductService"
 
 class ProductController {
-  static async getProducts(req: Request, res: Response) {
+  public async getProducts(req: Request, res: Response) {
     try {
-      const products = await ProductService.getProducts(req.query)
+      const products: IProduct[] = await ProductService.getProducts(req.query)
       res.json(products)
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch products" })
     }
   }
 
-  static async getFilters(req: Request, res: Response) {
+  public async getFilters(req: Request, res: Response) {
     try {
-      const filters = await ProductService.getFilters()
+      const { deleted } = req.query
+      const filters = await ProductService.getFilters(deleted === "true")
+
       res.json(filters)
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch filters" })
     }
   }
 
-  static async getProductCount(req: Request, res: Response) {
+  public async getProductCount(req: Request, res: Response): Promise<void> {
     try {
       const count = await ProductService.getProductCount(req.query)
       res.json({ count })
@@ -29,7 +32,7 @@ class ProductController {
     }
   }
 
-  static async createProduct(req: Request, res: Response) {
+  public async createProduct(req: Request, res: Response): Promise<void> {
     try {
       const product = await ProductService.createProduct(req.body)
       res.status(201).json(product)
@@ -38,7 +41,7 @@ class ProductController {
     }
   }
 
-  static async updateProduct(req: Request, res: Response) {
+  public async updateProduct(req: Request, res: Response): Promise<void> {
     try {
       const updatedProduct = await ProductService.updateProduct(
         parseInt(req.params.id),
@@ -50,7 +53,7 @@ class ProductController {
     }
   }
 
-  static async deleteProduct(req: Request, res: Response) {
+  public async deleteProduct(req: Request, res: Response): Promise<void> {
     try {
       await ProductService.deleteProduct(parseInt(req.params.id))
       res.status(204).send()
@@ -60,4 +63,4 @@ class ProductController {
   }
 }
 
-export default ProductController
+export default new ProductController()
