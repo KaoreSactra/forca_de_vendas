@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client"
-import { IProduct, ISku } from "../interfaces/Product"
+import { IProduct, ISku } from "../interfaces/products"
 
 class ProductService {
   private prisma: PrismaClient

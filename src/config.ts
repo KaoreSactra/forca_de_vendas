@@ -1,14 +1,12 @@
-import express, { Application } from "express"
 import cors from "cors"
+import express, { Application } from "express"
 import router from "./routes"
 
-class Server {
-  private app: Application
-  private port: number
+class App {
+  public app: Application
 
-  constructor(port: number) {
+  constructor() {
     this.app = express()
-    this.port = port
     this.middlewares()
     this.routes()
   }
@@ -16,7 +14,7 @@ class Server {
   private middlewares(): void {
     this.app.use(
       cors({
-        origin: `http://localhost:${this.port}`,
+        origin: "http://localhost:300",
         methods: ["GET", "POST", "PUT", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
@@ -28,15 +26,6 @@ class Server {
   private routes(): void {
     this.app.use("/api", router)
   }
-
-  public start(): void {
-    this.app.listen(this.port, () => {
-      console.log(`API rodando...\nhttp://localhost:${this.port}/api`)
-    })
-  }
 }
 
-const server = new Server(3000)
-server.start()
-
-export default server
+export default new App().app

@@ -12,7 +12,8 @@ class ProductRoutes {
   private initializeRoutes(): void {
     this.router.get(
       "/",
-      ProductController.getProducts.bind(ProductController))
+      ProductController.getProducts.bind(ProductController)
+    )
     this.router.get(
       "/filters",
       ProductController.getFilters.bind(ProductController)
