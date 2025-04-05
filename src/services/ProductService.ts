@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client"
-import { IProduct, ISku } from "../interfaces/products"
+import { IProduct, ISku } from "../interfaces/Products"
 
 class ProductService {
   private prisma: PrismaClient
@@ -65,14 +65,111 @@ class ProductService {
   }
 
   public async getFilters(onlyDeleted: boolean) {
+    const products = await this.prisma.products.findMany({
+      where: {
+        deleted_at: onlyDeleted ? { not: null } : undefined,
+      },
+      include: {
+        categories: true,
+        subcategories: true,
+        brands: true,
+      },
+    })
+
+    // Agrupamento e contagem
+    const brandMap = new Map<
+      number,
+      { id: number; name: string; quantity: number }
+    >()
+    const typeMap = new Map<string, number>()
+    const genderMap = new Map<string, number>()
+    const promptDeliveryMap = { true: 0, false: 0 }
+    const categoryMap = new Map<
+      string,
+      { name: string; quantity: number; subcategories: Map<string, number> }
+    >()
+
+    for (const product of products) {
+      // Brand
+      if (product.brands) {
+        const b = brandMap.get(product.brands.id)
+        if (b) b.quantity += 1
+        else
+          brandMap.set(product.brands.id, {
+            id: product.brands.id,
+            name: product.brands.name,
+            quantity: 1,
+          })
+      }
+
+      // Type
+      if (product.type) {
+        typeMap.set(product.type, (typeMap.get(product.type) || 0) + 1)
+      }
+
+      // Gender
+      if (product.gender) {
+        genderMap.set(product.gender, (genderMap.get(product.gender) || 0) + 1)
+      }
+
+      // Prompt delivery
+      if (
+        product.prompt_delivery !== null &&
+        product.prompt_delivery !== undefined
+      ) {
+        const key = product.prompt_delivery ? "true" : "false"
+        promptDeliveryMap[key]++
+      }
+
+      // Categories + Subcategories
+      const catName = product.categories?.name
+      const subName = product.subcategories?.name
+
+      if (catName) {
+        if (!categoryMap.has(catName)) {
+          categoryMap.set(catName, {
+            name: catName,
+            quantity: 0,
+            subcategories: new Map(),
+          })
+        }
+
+        const cat = categoryMap.get(catName)!
+        cat.quantity += 1
+
+        if (subName) {
+          cat.subcategories.set(
+            subName,
+            (cat.subcategories.get(subName) || 0) + 1
+          )
+        }
+      }
+    }
+
+    // Formatando resultado final
+    const brands = Array.from(brandMap.values())
+    const types = Array.from(typeMap.entries()).map(([name, quantity]) => ({
+      name,
+      quantity,
+    }))
+    const genders = Array.from(genderMap.entries()).map(([name, quantity]) => ({
+      name,
+      quantity,
+    }))
+    const categories = Array.from(categoryMap.values()).map((cat) => ({
+      name: cat.name,
+      quantity: cat.quantity,
+      subcategories: Array.from(cat.subcategories.entries()).map(
+        ([name, quantity]) => ({ name, quantity })
+      ),
+    }))
+
     return {
-      brands: await this.prisma.brands.findMany(),
-      categories: await this.prisma.categories.findMany(),
-      products: await this.prisma.products.findMany({
-        where: {
-          deleted_at: onlyDeleted ? { not: null } : undefined,
-        },
-      }),
+      brands,
+      types,
+      genders,
+      categories,
+      promptDelivery: promptDeliveryMap,
     }
   }
 
